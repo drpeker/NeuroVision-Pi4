@@ -68,7 +68,7 @@ class AudioStreamManager:
                     dtype=np.float32,  # 统一 float32
                     blocksize=self.device_config.output_frame_size,
                     callback=output_callback,
-                    latency="low",
+                    latency="high",
                 )
 
             logger.info(
@@ -174,7 +174,7 @@ class AudioStreamManager:
                         dtype=np.float32,
                         blocksize=self.device_config.output_frame_size,
                         callback=output_callback,
-                        latency="low",
+                        latency="high",
                     )
                     self.output_stream.start()
                     logger.info("输出流重新初始化成功")

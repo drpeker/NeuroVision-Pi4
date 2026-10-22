@@ -136,6 +136,9 @@ class McpServer:
         register_volume_tools(self.add_tool, volume_controller)
         register_app_tools(self.add_tool)
         register_weather_tools(self.add_tool)
+        from src.mcp.tools.neurovision import register_neurovision_tools
+        register_neurovision_tools(self.add_tool)
+
 
         # 外挂：用户目录插件包（自带 lib/），失败隔离
         try:

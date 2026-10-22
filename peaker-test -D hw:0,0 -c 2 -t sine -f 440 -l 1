@@ -1,0 +1,22 @@
+[1mdiff --git a/src/audio_codecs/stream_manager.py b/src/audio_codecs/stream_manager.py[m
+[1mindex 5cc581e..75cc76c 100644[m
+[1m--- a/src/audio_codecs/stream_manager.py[m
+[1m+++ b/src/audio_codecs/stream_manager.py[m
+[36m@@ -68,7 +68,7 @@[m [mclass AudioStreamManager:[m
+                     dtype=np.float32,  # 统一 float32[m
+                     blocksize=self.device_config.output_frame_size,[m
+                     callback=output_callback,[m
+[31m-                    latency="low",[m
+[32m+[m[32m                    latency="high",[m
+                 )[m
+ [m
+             logger.info([m
+[36m@@ -174,7 +174,7 @@[m [mclass AudioStreamManager:[m
+                         dtype=np.float32,[m
+                         blocksize=self.device_config.output_frame_size,[m
+                         callback=output_callback,[m
+[31m-                        latency="low",[m
+[32m+[m[32m                        latency="high",[m
+                     )[m
+                     self.output_stream.start()[m
+                     logger.info("输出流重新初始化成功")[m
