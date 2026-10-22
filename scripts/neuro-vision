@@ -1,0 +1,54 @@
+#!/bin/bash
+
+cd /home/drpeker/projects/neurovision || exit 1
+
+PYTHON="$PWD/.venv/bin/python"
+CAMERA_PID=""
+
+cleanup() {
+    trap - INT TERM EXIT
+    echo "NeuroVision kapatılıyor..."
+    if [ -n "$CAMERA_PID" ]; then
+        kill -- "-$CAMERA_PID" 2>/dev/null
+        wait "$CAMERA_PID" 2>/dev/null
+    fi
+}
+
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if curl -fsS --max-time 2 http://127.0.0.1:8080/detections >/dev/null 2>&1; then
+    echo "8080 portunda zaten bir görüntü sunucusu çalışıyor."
+    echo "Önce eski NeuroVision oturumunu Ctrl+C ile kapat."
+    exit 1
+fi
+
+echo "Kamera başlatılıyor..."
+setsid "$PYTHON" vision/neurovision_live.py &
+CAMERA_PID=$!
+
+echo "Kamera bekleniyor..."
+READY=0
+
+for i in {1..40}; do
+    if ! kill -0 "$CAMERA_PID" 2>/dev/null; then
+        echo "Kamera başlatılamadı."
+        exit 1
+    fi
+
+    if curl -fsS --max-time 1 http://127.0.0.1:8080/detections >/dev/null 2>&1; then
+        READY=1
+        break
+    fi
+    sleep 0.5
+done
+
+if [ "$READY" -ne 1 ]; then
+    echo "Kamera zaman aşımı."
+    exit 1
+fi
+
+echo "Kamera hazır. XiaoZhi başlatılıyor..."
+echo "Durdurmak için Ctrl+C"
+"$PYTHON" main.py --mode cli
