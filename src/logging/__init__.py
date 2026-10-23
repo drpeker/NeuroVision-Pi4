@@ -243,7 +243,7 @@ def get_logger(name: str | None = None) -> logging.Logger:
             logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         )
         logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
 
     return logger
 

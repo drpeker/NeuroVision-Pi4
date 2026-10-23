@@ -62,6 +62,8 @@ from src.logging import load_logging_config, setup_logging  # noqa: E402
 
 # CLI/TUI 模式禁用控制台日志输出（由界面接管）
 setup_logging(
+    level="INFO",
+    enable_file=False,
     enable_console=(_args.mode not in ("cli", "tui")),
     config=load_logging_config(),
 )
