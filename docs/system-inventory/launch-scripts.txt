@@ -1,0 +1,9 @@
+scripts/py_audio_scanner.py
+scripts/dir_tree.py
+scripts/neuro-vision
+scripts/keyword_generator.py
+scripts/music_cache_scanner.py
+scripts/check_mcp_plugin.py
+scripts/camera_scanner.py
+scripts/debug_audio_devices.py
+scripts/bundle_ffmpeg.sh
