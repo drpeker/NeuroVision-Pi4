@@ -39,11 +39,13 @@ time.sleep(1)
 
 latest_jpeg = None
 latest_detections = []
+latest_timestamp = None
+latest_raw_jpeg = None
 lock = threading.Lock()
 running = True
 
 def vision_loop():
-    global latest_jpeg, latest_detections
+    global latest_jpeg, latest_detections, latest_timestamp, latest_raw_jpeg
 
     while running:
         ok, frame = camera.read()
@@ -70,6 +72,10 @@ def vision_loop():
         classes = interpreter.get_tensor(outs[1]["index"])[0]
         scores = interpreter.get_tensor(outs[2]["index"])[0]
         count = int(interpreter.get_tensor(outs[3]["index"])[0])
+
+        raw_buffer = io.BytesIO()
+        image.save(raw_buffer, format='JPEG', quality=80)
+        raw_jpeg = raw_buffer.getvalue()
 
         draw = ImageDraw.Draw(image)
         detections = []
@@ -113,12 +119,50 @@ def vision_loop():
         with lock:
             latest_jpeg = buf.getvalue()
             latest_detections = detections
+            latest_raw_jpeg = raw_jpeg
+            latest_timestamp = time.time()
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
     def do_GET(self):
+        if self.path == "/snapshot":
+            with lock:
+                jpg = latest_raw_jpeg
+            if jpg is None:
+                self.send_error(503, "Frame not ready")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "image/jpeg")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(jpg)))
+            self.end_headers()
+            self.wfile.write(jpg)
+            return
+
+        if self.path == "/scene":
+            with lock:
+                timestamp = latest_timestamp
+                objects = list(latest_detections)
+            age = None if timestamp is None else round(time.time() - timestamp, 2)
+            scene = {
+                "source": "NeuroVision Live",
+                "timestamp": timestamp,
+                "age_seconds": age,
+                "ready": timestamp is not None,
+                "fresh": age is not None and age <= 5,
+                "objects": objects
+            }
+            payload = json.dumps(scene).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
         if self.path == "/detections":
             with lock:
                 payload = json.dumps(latest_detections).encode()

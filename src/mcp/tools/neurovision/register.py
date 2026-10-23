@@ -11,10 +11,16 @@ def get_visible_objects(args: dict) -> str:
     """Read the latest detections from the local vision server."""
     try:
         with urlopen(
-            "http://127.0.0.1:8080/detections",
+            "http://127.0.0.1:8080/scene",
             timeout=3,
         ) as response:
-            detections = json.load(response)
+            scene = json.load(response)
+        if not scene.get('fresh'):
+            return json.dumps({
+                'error': 'Camera scene is not current',
+                'scene': scene
+            }, ensure_ascii=False)
+        detections = scene.get('objects', [])
 
         return json.dumps(
             {

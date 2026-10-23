@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from urllib.request import urlopen
 from collections.abc import Callable
 
 from src.logging import get_logger
@@ -37,13 +38,25 @@ def register_camera_tools(add_tool: Callable[[McpTool], None], camera) -> None:
         question = arguments.get("question", "")
         logger.info(f"Taking photo with question: {question}")
 
-        success = await asyncio.to_thread(camera.capture)
-        if not success:
-            logger.error("Failed to capture photo")
-            return json.dumps({"success": False, "message": "Failed to capture photo"})
+        def fetch_snapshot():
+            with urlopen("http://127.0.0.1:8080/snapshot", timeout=5) as response:
+                return response.read()
 
-        logger.info("Photo captured, starting analysis...")
-        return await asyncio.to_thread(camera.analyze, question)
+        try:
+            jpeg = await asyncio.to_thread(fetch_snapshot)
+            if not jpeg.startswith(bytes.fromhex('ffd8ff')):
+                raise ValueError("Invalid JPEG received")
+        except Exception as exc:
+            logger.error(f"NeuroVision snapshot failed: {exc}")
+            return json.dumps({
+                "success": False,
+                "message": f"NeuroVision snapshot failed: {exc}"
+            })
+
+        logger.info(f"NeuroVision snapshot received: {len(jpeg)} bytes")
+        return await asyncio.to_thread(
+            camera.analyze, question, image_data=jpeg
+        )
 
     add_tool(
         McpTool(
